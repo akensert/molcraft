@@ -3,10 +3,11 @@
 A **deep learning** project for **de novo generation** and **optimization** of **molecules**.
 
 ## Status
-In progress.
+In progress. See [example.ipynb](https://github.com/akensert/molcraft/blob/main/notebooks/example.ipynb).
 
 ## Highlights
 - Tokenization, model training, and SMILES generation, are all performed in the TF graph.
+- Around 100% valid, 100% unique, and 100% diverse, SMILES.
 
 ## Current Goals
 1. Generation of novel chemical compounds based on SMILES, using generative transformer models. 
