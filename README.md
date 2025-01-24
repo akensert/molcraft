@@ -1,6 +1,6 @@
 <img src="https://github.com/akensert/molcraft/blob/main/media/molcraft-logo.png" alt="molcraft-logo" width="90%">
 
-**Transformers** with **TensorFlow** and **Keras**. Focused on molecule generation and chemistry prediction.
+**Transformers** with **TensorFlow** and **Keras**. Focused on **Molecule Generation** and **Chemistry Predictions**.
 
 ## Highlights
 
