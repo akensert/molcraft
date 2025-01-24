@@ -1,0 +1,50 @@
+[project]
+name = "molcraft"
+description = "Generative Deep Learning for molecules"
+readme = "README.md"
+license = { file = "LICENSE" }
+dynamic = ["version"]
+authors = [
+    {name = "Alexander Kensert", email = "alexander.kensert@gmail.com"}
+]
+keywords = [
+    "python",
+    "machine-learning",
+    "deep-learning",
+    "generative-deep-learning",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+]
+requires-python = ">=3.10"
+dependencies = [
+    "tensorflow>=2.18.0",
+    "tensorflow_probability>=0.18.0",
+    "keras-hub>=0.18.0",
+    "tf-keras>=2.18.0",
+    "rdkit>=2024.9.4",
+    "pandas>=1.0.3",
+    "jupyter>=1.0.0"
+]
+
+[project.optional-dependencies]
+gpu = ["tensorflow[and-cuda]>=2.18"]
+
+[tool.setuptools.dynamic]
+version = { attr = "molcraft.__version__" }
+
+[project.urls]
+Homepage = "https://github.com/akensert/molcraft"
+
+[tool.setuptools.packages.find]
+include = ["molcraft*"]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+include-package-data = true
