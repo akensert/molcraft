@@ -17,7 +17,7 @@ class TransformerDecoder(keras.Model):
         intermediate_dim: int,
         vocabulary_size: int,
         sequence_length: int = None,
-        num_segments: int = None,
+        # num_segments: int = None,
         dropout: float = 0.0,
         activation: keras.layers.Activation = "relu",
         layer_norm_epsilon: float = 1e-05,
@@ -37,7 +37,7 @@ class TransformerDecoder(keras.Model):
         self.intermediate_dim = intermediate_dim
         self.vocabulary_size = vocabulary_size
         self.sequence_length = sequence_length or DEFAULT_SEQUENCE_LENGTH
-        self.num_segments = num_segments
+        # self.num_segments = num_segments
         self.dropout = dropout
         self.activation = activation
         self.layer_norm_epsilon = layer_norm_epsilon
@@ -61,11 +61,11 @@ class TransformerDecoder(keras.Model):
             initializer=clone_initializer(self.embeddings_initializer)
         )
 
-        if self.num_segments:
-            self.segment_embedding = layers.SegmentEmbedding(
-                self.num_segments,
-                initializer=clone_initializer(self.embeddings_initializer)
-            )
+        # if self.num_segments:
+        #     self.segment_embedding = layers.SegmentEmbedding(
+        #         self.num_segments,
+        #         initializer=clone_initializer(self.embeddings_initializer)
+        #     )
 
         self.decoders = [
             keras_hub.layers.TransformerDecoder(
@@ -86,8 +86,8 @@ class TransformerDecoder(keras.Model):
     def call(self, decoder_sequence, encoder_sequence=None, **kwargs):
         embedding = self.token_embedding(decoder_sequence)
         embedding += self.position_embedding(embedding)
-        if self.num_segments:
-            embedding += self.segment_embedding(embedding)
+        # if self.num_segments:
+        #     embedding += self.segment_embedding(embedding)
         x = embedding
         for decoder in self.decoders:
             x = decoder(
