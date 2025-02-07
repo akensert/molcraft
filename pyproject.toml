@@ -22,9 +22,7 @@ classifiers = [
 requires-python = ">=3.10"
 dependencies = [
     "tensorflow>=2.18.0",
-    "tensorflow_probability>=0.18.0",
     "keras-hub>=0.18.0",
-    "tf-keras>=2.18.0",
     "rdkit>=2024.9.4",
     "pandas>=1.0.3",
     "jupyter>=1.0.0"

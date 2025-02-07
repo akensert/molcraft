@@ -1,5 +1,5 @@
 # Additional
-notebooks/datasets
+notebooks/data
 notebooks/_*.ipynb
 
 # jupyter

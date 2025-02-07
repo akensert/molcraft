@@ -12,6 +12,7 @@ OOV_TOKEN = '[oov]'
 OOV_TOKEN_ID = 1
 BOS_TOKEN = '[bos]'
 EOS_TOKEN = '[eos]'
+SEP_TOKEN = '[sep]'
 
 TOKEN_DTYPE = tf.string
 TOKEN_ID_DTYPE = tf.int32
@@ -31,12 +32,14 @@ class Tokenizer(keras.layers.Layer, abc.ABC):
         add_eos: bool = False, 
         oov_token: str = OOV_TOKEN,
         sep_token: str = None,
+        padding_mode: str = 'right',
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)
         if sequence_length and not isinstance(sequence_length, int):
             raise ValueError('`sequence_length` needs to be an int or None.')
         self.sequence_length = sequence_length
+        self.padding_mode = 'left' if padding_mode == 'left' else 'right'
         self.pad_token = PAD_TOKEN
         self.bos_token = BOS_TOKEN if add_bos else None
         self.eos_token = EOS_TOKEN if add_eos else None
@@ -44,6 +47,9 @@ class Tokenizer(keras.layers.Layer, abc.ABC):
         self.sep_token = sep_token
         self.pad_token_id = PAD_TOKEN_ID
         self.oov_token_id = OOV_TOKEN_ID
+        self.bos_token_id = 2 if self.bos_token else None 
+        self.eos_token_id = 3 if self.eos_token else None 
+        self.eos_token_id -= 1 if not self.bos_token else 0 
         self._special_tokens = [self.pad_token]
         if self.oov_token:
             self._special_tokens.append(self.oov_token)
@@ -88,7 +94,11 @@ class Tokenizer(keras.layers.Layer, abc.ABC):
         Should accept a batch of sequences.
         '''
 
-    def tokenize(self, inputs: tf.Tensor) -> tf.Tensor:
+    def tokenize(
+        self, 
+        inputs: tf.Tensor, 
+        ragged: bool = False,
+    ) -> tf.RaggedTensor | tf.Tensor:
         '''Tokenizes sequence(s).
 
         While `pretokenize` split sequence(s) into tokens, `tokenize` splits 
@@ -98,14 +108,21 @@ class Tokenizer(keras.layers.Layer, abc.ABC):
 
         Should accept a batch of sequences and should incorporate `pretokenize`. 
         '''
+        inputs = tf.strings.join([
+            self.bos_token or '', inputs, self.eos_token or ''])
         tokens = self.pretokenize(inputs)
         token_ids = self.token_to_id(tokens)
-        if not self.sequence_length:
-            return token_ids
-        return token_ids.to_tensor(
+        if not self.sequence_length or ragged:
+            return token_ids 
+        if self.padding_mode == 'left':
+            token_ids = token_ids[:, ::-1]
+        token_ids = token_ids.to_tensor(
             shape=(None, self.sequence_length), 
             default_value=self.pad_token_id,
         )
+        if self.padding_mode == 'left':
+            token_ids = token_ids[:, ::-1]
+        return token_ids
     
     def call(self, inputs: tf.Tensor) -> tf.Tensor:
         '''Calls the `Tokenizer` layer.
@@ -217,6 +234,23 @@ class Tokenizer(keras.layers.Layer, abc.ABC):
             index = tf.convert_to_tensor(index)
         return self._lookup_table_reverse.lookup(index)
 
+    def pad(
+        self, 
+        inputs: tf.RaggedTensor, 
+        sequence_length: int | str | None = 'auto',
+        pad_value: int | str | None = 'auto'
+    ) -> tf.Tensor:
+        sequence_length = (
+            self.sequence_length if sequence_length == 'auto' else
+            sequence_length
+        )
+        pad_value = (
+            self.pad_token_id if pad_value == 'auto' else pad_value
+        )
+        return inputs.to_tensor(
+            shape=(None, sequence_length), default_value=pad_value
+        )
+    
     def get_vocabulary(self):
         return getattr(self, '_vocabulary', None)
 
@@ -261,7 +295,7 @@ class Tokenizer(keras.layers.Layer, abc.ABC):
             'sep_token': self.sep_token,
         })
         return config
-
+    
 
 @keras.saving.register_keras_serializable(package='molcraft')
 class SMILESTokenizer(Tokenizer):
@@ -278,10 +312,8 @@ class SMILESTokenizer(Tokenizer):
     )
     
     def pretokenize(self, inputs: tf.Tensor) -> tf.RaggedTensor:
-        sequences = tf.strings.join([
-            self.bos_token or '', inputs, self.eos_token or ''])
         return tf_text.regex_split(
-            sequences, 
+            inputs, 
             delim_regex_pattern=self.SMILES_REGEX_PATTERN, 
             keep_delim_regex_pattern=self.SMILES_REGEX_PATTERN
         )
@@ -294,3 +326,20 @@ class SMILESTokenizer(Tokenizer):
         )
         return sequences
 
+    @staticmethod
+    def truncate_product(smiles: str, sep: str = SEP_TOKEN):
+        if isinstance(smiles, str):
+            return sep.join(smiles.split(sep)[:-1]) + sep 
+        array_type = smiles.__class__()
+        return array_type(
+            list(map(lambda s: sep.join(s.split(sep)[:-1]) + sep, smiles))
+        )
+
+    @staticmethod
+    def extract_product(smiles: str, sep: str = SEP_TOKEN):
+        if isinstance(smiles, str):
+            return smiles.split(sep)[-1]
+        array_type = smiles.__class__()
+        return array_type(
+            list(map(lambda s: s.split(sep)[-1]), smiles)
+        )
